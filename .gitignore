@@ -1,0 +1,4 @@
+secrets/
+.env
+config.toml
+output/

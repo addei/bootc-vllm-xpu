@@ -1,0 +1,36 @@
+[Unit]
+Description=vLLM OpenAI server (Intel XPU, Arc Pro B70)
+After=network-online.target
+Wants=network-online.target
+ConditionDirectoryNotEmpty=/var/lib/vllm/models
+
+[Container]
+ContainerName=vllm
+# Pinned: the cookbook MTP patches are written against this exact build.
+Image=docker.io/vllm/vllm-openai-xpu@sha256:f01e24f6c7ff01f1e0662234255a1372297d1dbd89d003cf13c8fad3eab1ba4f
+Pull=missing
+AddDevice=/dev/dri
+# SELinux otherwise denies the container access to /dev/dri.
+SecurityLabelDisable=true
+Volume=/var/lib/vllm/models:/models:ro
+# Keeps torch.compile / Triton caches so restarts skip the multi-minute JIT.
+Volume=/var/lib/vllm/cache:/root/.cache
+Volume=/usr/share/vllm-xpu/patches:/patches:ro
+Volume=/usr/libexec/vllm-xpu-entrypoint:/entrypoint:ro
+EnvironmentFile=/etc/vllm/vllm.env
+Environment=VLLM_TARGET_DEVICE=xpu
+Environment=ZE_FLAT_DEVICE_HIERARCHY=COMPOSITE
+Environment=ZE_AFFINITY_MASK=0
+Environment=VLLM_XPU_ENABLE_XPU_GRAPH=1
+Environment=PYTORCH_ALLOC_CONF=expandable_segments:True
+PublishPort=8000:8000
+Entrypoint=/entrypoint
+
+[Service]
+# First start pulls a multi-GB image, then loads weights and JIT-compiles kernels.
+TimeoutStartSec=1800
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

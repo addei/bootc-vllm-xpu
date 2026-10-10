@@ -1,0 +1,16 @@
+#!/bin/bash
+# Runs inside the vLLM container (mounted at /entrypoint by vllm.container).
+set -euo pipefail
+
+if [[ "${SERVE_APPLY_PATCHES:-1}" == 1 ]]; then
+    python /patches/patch_mtp_nightly.py
+    python /patches/patch_mtp_boundary.py
+fi
+
+args=(--host 0.0.0.0 --port 8000 --served-model-name "${SERVE_MODEL_NAME}")
+[[ -n "${SERVE_SPECULATIVE_CONFIG:-}" ]] && args+=(--speculative-config "${SERVE_SPECULATIVE_CONFIG}")
+[[ -n "${VLLM_API_KEY:-}" ]] && args+=(--api-key "${VLLM_API_KEY}")
+
+# SERVE_ARGS is intentionally word-split into separate flags.
+# shellcheck disable=SC2086
+exec vllm serve "${SERVE_MODEL}" ${SERVE_ARGS} "${args[@]}"

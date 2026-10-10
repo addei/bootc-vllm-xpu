@@ -1,0 +1,25 @@
+# config.toml.example — bootc-image-builder customizations
+#
+# Copy this to `config.toml` and edit it with your own values:
+#   cp config.toml.example config.toml
+#
+# `config.toml` is gitignored so your personal SSH key / username are never
+# committed. This file is only used at install time (Anaconda / disk image)
+# to create the login account — it is NOT baked into the published image.
+#
+# Reference: https://github.com/osbuild/bootc-image-builder#-build-config
+
+[[customizations.user]]
+# Login user created during install. Keep this to groups that exist in the
+# Anaconda installer environment (e.g. `wheel` for sudo). Do NOT list
+# `render`/`video` here: those groups only exist in the deployed image, not in
+# the installer, so libuser fails to add the user to them and the whole install
+# aborts ("user <name> does not exist"). The vLLM container runs rootful and
+# gets /dev/dri on its own, so the login user does not need them.
+name = "admin"
+groups = ["wheel"]
+# Your SSH public key — replace with your own (cat ~/.ssh/id_ed25519.pub):
+key = "ssh-ed25519 AAAA... user@host"
+# Optional: set a password hash instead of / in addition to the SSH key.
+# Generate with: openssl passwd -6
+# password = "$6$..."
